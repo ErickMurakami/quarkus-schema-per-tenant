@@ -4,7 +4,7 @@ CREATE SCHEMA IF NOT EXISTS tenant_b;
 -- SHARED DATA
 
 CREATE TABLE public.app_users(
-    id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    id BIGINT PRIMARY KEY,
     email VARCHAR(150) NOT NULL UNIQUE,
     tenant_schema VARCHAR(50) NOT NULL
 );
@@ -31,8 +31,8 @@ INSERT INTO public.app_users(id, email, tenant_schema)
 
 -- TENANT A DATA
 
-INSERT INTO tenant_a.customers(name) VALUES('Acme Customer A')('Acme Customer B');
+INSERT INTO tenant_a.customers(name) VALUES('Acme Customer A'),('Acme Customer B');
 
 --TENANT B DATA
 
-INSERT INTO tenant_b.customers(name) VALUES('Globex Customer A')('Globex Customer B');
+INSERT INTO tenant_b.customers(name) VALUES('Globex Customer A'),('Globex Customer B');

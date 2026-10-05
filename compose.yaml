@@ -1,12 +1,12 @@
 services:
   postgres:
-    image: postgres:17-alpine
+    image: docker.io/library/postgres:17-alpine
     container_name: quarkus-schema-per-tenant-postgres
 
     environment:
-        POSTGRES_USER: quarkus
-        POSTGRES_PASSWORD: quarkus
-        POSTGRES_DB: multitenant
+      POSTGRES_USER: quarkus
+      POSTGRES_PASSWORD: quarkus
+      POSTGRES_DB: multitenant
 
     ports:
       - "5432:5432"

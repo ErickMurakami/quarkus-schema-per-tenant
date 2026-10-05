@@ -1,0 +1,5 @@
+target
+.quarkus/
+.idea/
+
+src/main/resources/privateKey.pem
