@@ -16,7 +16,7 @@ public class JwtTenantResolver implements TenantResolver {
 
     private static final String DEFAULT_TENANT = "public";
 
-    private static final Set<String> SUPPORTED_TENANTS = Set.of("public", "tenant1", "tenant2");
+    private static final Set<String> SUPPORTED_TENANTS = Set.of("public", "tenant_a", "tenant_b");
 
     @Inject
     SecurityIdentity identity;
