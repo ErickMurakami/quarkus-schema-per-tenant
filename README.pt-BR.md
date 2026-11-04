@@ -59,8 +59,9 @@ flowchart TD
     C --> D[GET /customers ou POST /customers autenticado]
     D --> E[JwtTenantResolver]
     E --> F[Hibernate ORM]
-    F --> G[tenant_a.customers]
-    F --> H[tenant_b.customers]
+    F --> S{Selecionar um schema de tenant}
+    S -->|tenant_a| G[tenant_a.customers]
+    S -->|tenant_b| H[tenant_b.customers]
 ```
 
 O schema selecionado determina qual tabela de clientes será acessada; uma requisição não consulta as duas tabelas.
@@ -96,7 +97,7 @@ src/main/java/dev/erick/multitenancy/
 ├── service/      # Lógica da aplicação
 └── tenancy/      # Resolução de tenant pelo JWT
 src/main/resources/db/migration/       # SQL do Flyway
-src/test/java/dev/erick/multitenancy/   # Testes unitários
+src/test/java/dev/erick/multitenancy/   # Testes unitários e de integração
 ```
 
 ## Pré-requisitos
@@ -174,15 +175,40 @@ Repita o login com o outro usuário para acessar os clientes do outro schema. Os
 
 ## Testes e empacotamento
 
+### Testes unitários
+
 ```bash
 mvn test
+```
+
+Os testes com JUnit/Mockito verificam sucesso e rejeição do login, construção das claims JWT com assinatura simulada, resolução de tenant, comportamento do serviço de clientes e retornos dos recursos. Eles executam sem PostgreSQL ou uma instância do Quarkus em execução.
+
+### Testes de integração
+
+```bash
+mvn verify
+```
+
+Esse comando executa os testes unitários (Surefire) e os testes de integração (Failsafe). `TenantIsolationIT` usa `@QuarkusTest`, REST Assured, assinatura e validação reais de JWT, migrações Flyway e Hibernate ORM contra PostgreSQL 17. O resolver de tenant, os componentes de persistência e o datasource não são simulados.
+
+A suíte verifica os dois logins de demonstração, leitura isolada de Acme/Globex, um cliente com nome único criado por John que Jane não consegue ver e HTTP 401 ao consultar clientes sem autenticação. Ela exercita o fluxo real:
+
+```text
+HTTP → JWT → SecurityIdentity → JwtTenantResolver → Hibernate ORM → schema PostgreSQL
+```
+
+Localmente, o Testcontainers inicia um container descartável `postgres:17-alpine`. É necessário um runtime de containers compatível com Docker; no Podman, o socket compatível com Docker precisa estar configurado para o Testcontainers. Não é necessário iniciar o Compose, fornecer um token ou gerar chaves manualmente: o recurso de teste cria um par RSA temporário e o remove ao terminar.
+
+No CI, `.github/workflows/ci.yml` executa `mvn -B -ntp verify` com Temurin 25 e um serviço PostgreSQL 17 validado por healthcheck. O workflow cria um par RSA correspondente no diretório temporário do runner, sem imprimir as chaves. As variáveis exclusivas de teste `TEST_DATABASE_URL`, `TEST_DATABASE_USERNAME`, `TEST_DATABASE_PASSWORD`, `TEST_JWT_PRIVATE_KEY` e `TEST_JWT_PUBLIC_KEY` conectam a suíte a esse serviço descartável e às chaves. As configurações e chaves de produção permanecem inalteradas.
+
+### Empacotamento
+
+```bash
 mvn package
 java -jar target/quarkus-app/quarkus-run.jar
 ```
 
-Os testes unitários com JUnit/Mockito verificam sucesso e rejeição do login, construção das claims JWT com assinatura simulada, resolução de tenant, comportamento do serviço de clientes e retornos dos recursos, incluindo conversão para DTO e respostas de criação. Eles executam sem PostgreSQL ou uma instância do Quarkus em execução.
-
-Esses testes não verificam o isolamento real entre schemas PostgreSQL, a execução do Flyway ou o fluxo completo de multitenancy do Hibernate. Esses comportamentos exigiriam testes de integração.
+`mvn package` executa os testes unitários e empacota a aplicação; `mvn verify` também executa a suíte de integração. A execução da aplicação empacotada exige o banco e as chaves descritos em “Executar localmente”.
 
 ## Fora do escopo
 
